@@ -3,7 +3,7 @@ Investing library (Data and Operations).
 
 # features plan
 Data
-    - Basic: Assets, Prices, candles etc
+    - Basic: Markets, Assets, Prices etc
     - Indicators
     - Fundamental Data
 
