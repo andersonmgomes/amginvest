@@ -1,5 +1,25 @@
 import MetaTrader5 as mt5
 from datetime import datetime
+import maya as dthUtil #dateutil lib
+import pandas as pd
+
+def getMT5Conn():
+    # connect to MetaTrader 5
+    if not mt5.initialize():
+        setLastErrorDescription("initialization failed")
+        return None    
+    #print('----------------')
+    #print(mt5.account_info().server)
+    #print('Total de ativos: ' + str(mt5.symbols_total()))
+    return mt5
+
+'''
+TimeFrames Constants
+'''
+TF_M1 = getMT5Conn().TIMEFRAME_M1
+TF_M2 = getMT5Conn().TIMEFRAME_M2
+#...
+TF_D1 = getMT5Conn().TIMEFRAME_D1
 
 def setLastErrorDescription(description):
     global lasterrordescription
@@ -10,16 +30,6 @@ def getLastErrorDescription():
     delMT5Conn()
     return lasterrordescription
     
-def getMT5Conn():
-# connect to MetaTrader 5
-    if not mt5.initialize():
-        setLastErrorDescription("initialization failed")
-        return None    
-    #print('----------------')
-    #print(mt5.account_info().server)
-    #print('Total de ativos: ' + str(mt5.symbols_total()))
-    return mt5
-
 def delMT5Conn():
     # shut down connection to the MetaTrader 5 terminal
     mt5.shutdown()
@@ -70,23 +80,37 @@ def getLastPrice(codigo):
     
     if not validatePrice(lastprice):
         # try get last M1 close price 
-        lastprice = getMT5Conn().copy_rates_from_pos(codigoTratado, getMT5Conn().TIMEFRAME_M1, 0, 1)[0][4]
+        lastprice = getMT5Conn().copy_rates_from_pos(codigoTratado, TF_M1, 0, 1)[0][4]
         if not validatePrice(lastprice):
             print(getLastErrorDescription())
             return -1        
     #else
     delMT5Conn()
     return lastprice
- 
-def getRatesByRange(symbol, dth1, dth2, tf):
+
+#time, open, high, low, close, tick_volume, spread and real_volume
+def quotesToDF(data):
+    df = pd.DataFrame(data=data, index=None, columns=["time", "open", "high", "close", "tick_volume", "spread", "real_volume"])
+    df['time'] = pd.to_datetime(df['time'], unit='s')
+    return df.set_index('time')
+
+def getRatesByRange(symbol, dth1, dth2, tf=TF_D1, returnAsDataFrame=False):
+    
     codigoTratado = normalizeSymbol(symbol)
     if codigoTratado == 'ERROR':
         print(getLastErrorDescription())
         return -1        
-    rates = getMT5Conn().copy_rates_range(codigoTratado, tf, dth1, dth2)
+
+    _dth1 = dthUtil.parse(dth1).datetime()
+    _dth2 = dthUtil.parse(dth2).datetime()
+    
+    rates = getMT5Conn().copy_rates_range(codigoTratado, tf, _dth1, _dth2)
     #else
     delMT5Conn()
-    return rates
+    if returnAsDataFrame:
+        return quotesToDF(rates)
+    #else
+    return rates #numpy array
 
 def getRatesByDth(codigo, dth, count, tf):
     codigoTratado = normalizeSymbol(codigo)
@@ -97,9 +121,3 @@ def getRatesByDth(codigo, dth, count, tf):
     #else
     delMT5Conn()
     return rates
-
-'''
-TimeFrames Constants
-'''
-TF_D1 = getMT5Conn().TIMEFRAME_D1
-
