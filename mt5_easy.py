@@ -90,7 +90,7 @@ def getLastPrice(codigo):
 
 #time, open, high, low, close, tick_volume, spread and real_volume
 def quotesToDF(data):
-    df = pd.DataFrame(data=data, index=None, columns=["time", "open", "high", "close", "tick_volume", "spread", "real_volume"])
+    df = pd.DataFrame(data=data, index=None, columns=["time", "open", "high", "low", "close", "tick_volume", "spread", "real_volume"])
     df['time'] = pd.to_datetime(df['time'], unit='s')
     return df.set_index('time')
 
